@@ -18,13 +18,11 @@ setup(
     author_email='alpha@bookwar.info',
     license='Apache 2.0',
     packages=find_packages(),
-    package_data = {
+    package_data={
         'gpiodev': ['libgpioctl.so'],
     },
     ext_modules=[
-        Extension('gpiodev.libgpioctl',
-                  ['gpiodev/src/gpioctl.c'],
-        ),
+        Extension('gpiodev.libgpioctl', ['gpiodev/src/gpioctl.c']),
     ],
     headers=['gpiodev/src/gpioctl.h'],
     classifiers=[
@@ -35,4 +33,3 @@ setup(
         'Programming Language :: Python',
         ]
 )
-
