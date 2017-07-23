@@ -4,3 +4,7 @@
 libgpioctl.so.*
 *~
 *.pyc
+build/
+dist/
+venv*
+*.egg-info

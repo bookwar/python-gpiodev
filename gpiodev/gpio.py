@@ -19,12 +19,23 @@ GPIOHANDLE_REQUEST_OPEN_SOURCE = 1 << 4
 # ctypes structures
 ########################################################
 
-libgpioctl = ctypes.CDLL(
-    os.path.join(
-        os.path.dirname(__file__),
-        'libgpioctl.so.0.0.1',
-    )
-)
+def get_library(name):
+    '''Find library in a current directory
+    
+    We add 'lib' and '.so' to the name.
+    '''
+    
+    path = os.path.dirname(__file__)
+    files = os.listdir(path);
+
+    for file in files:
+        if file.startswith("lib{name}".format(name=name)):
+            if file.endswith(".so"):
+                return os.path.join(path, file)
+    return None
+
+
+libgpioctl = ctypes.CDLL(get_library("gpioctl"))
 
 c32 = ctypes.c_char * 32
 

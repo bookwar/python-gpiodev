@@ -9,13 +9,13 @@ provides several [ioctl
 syscalls](https://github.com/torvalds/linux/blob/master/include/uapi/linux/gpio.h)
 for bulk operations on sets of GPIO pins.
 
-In [core/gpioctl.c](core/gpioctl.c) we wrap the ioctl calls into
+In [gpiodev/src/gpioctl.c](gpiodev/src/gpioctl.c) we wrap the ioctl calls into
 C-functions suitable for later use.
 
-In [core/gpio.py](core/gpio.py) the ctypes bindings created and then
+In [gpiodev/gpio.py](gpiodev/gpio.py) the ctypes bindings created and then
 used to define the main GPIOHandle class.
 
-See usage example [example.py](example.py).
+Check [examples](examples) for usage.
 
 ----
 
