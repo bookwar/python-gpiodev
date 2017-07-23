@@ -21,7 +21,12 @@ setup(
     package_data = {
         'gpiodev': ['libgpioctl.so'],
     },
-    ext_modules=[Extension('gpiodev.libgpioctl', ['gpiodev/src/gpioctl.c'])],
+    ext_modules=[
+        Extension('gpiodev.libgpioctl',
+                  ['gpiodev/src/gpioctl.c'],
+        ),
+    ],
+    headers=['gpiodev/src/gpioctl.h'],
     classifiers=[
         'Development Status :: 3 - Alpha',
         'Intended Audience :: Developers',

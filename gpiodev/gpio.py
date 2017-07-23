@@ -19,14 +19,15 @@ GPIOHANDLE_REQUEST_OPEN_SOURCE = 1 << 4
 # ctypes structures
 ########################################################
 
+
 def get_library(name):
     '''Find library in a current directory
-    
+
     We add 'lib' and '.so' to the name.
     '''
-    
+
     path = os.path.dirname(__file__)
-    files = os.listdir(path);
+    files = os.listdir(path)
 
     for file in files:
         if file.startswith("lib{name}".format(name=name)):
