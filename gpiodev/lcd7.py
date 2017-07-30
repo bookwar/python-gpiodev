@@ -1,27 +1,72 @@
 from gpiodev import GPIOHandle
 import asyncio
 
-# LCD pins
+'''
 
-#       12 11 10 9 8 7
-#  __    __      __    __
-# |  |  |  |    |  |  |  |
-# |__|  |__|  . |__|  |__|
-# |  |  |  |  . |  |  |  |
-# |__|. |__|.   |__|. |__|.
-#
-#       1 2 3 4 5 6
-#
-#  Mapped to
-#   1     2        3     4
-#
-#  -5-    __       __    __
-# 6   |  |  |     |  |  |  |
-# |   7  |__|  .  |__|  |__|
-#  -8-         12
-# 9   |  |  |  .  |  |  |  |
-# |  10  |__|.    |__|. |__|.
-#  -11-
+LCD7 is a device with four 7-segment LED digits to show. 7 segments
+are not enough to show arbitraty letters, but it can be used as clocks
+or counter.
+
+Though there are 4x7 = 28 LED segments to switch on and off, it uses
+only 12 GPIO pins. 4 pins are used to choose the active digit, 7 pins
+- to switch on segments for a digit, and one additional pin controls
+central dots (not implemented here).
+
+Abstract pins used in LCD7 class implementation are:
+
+Digits:
+
+```
+  0     1      2     3
+```
+
+Segments:
+
+```
+  --0--
+ |     |
+ 1     2
+ |     |
+  --3--
+ |     |
+ 4     5
+ |     |
+  --6--
+```
+
+If we enumerate physical pins on a device in a following manner:
+
+```
+    12 11 10  9  8  7
+     |  |  |  |  |  |
+ __    __      __    __
+|  |  |  |    |  |  |  |
+|__|  |__|  . |__|  |__|
+|  |  |  |  . |  |  |  |
+|__|. |__|.   |__|. |__|.
+
+     |  |  |  |  |  |
+     1  2  3  4  5  6
+```
+
+Then to setup the LCD7 class one needs to specify the input pins in the following order:
+
+```
+Digits       Segments     Dots
+
+0)  12       0)  11       0) 3 (not used)
+1)  9        1)  10
+2)  8        2)  7
+3)  6        3)  5
+             4)  1
+             5)  4
+             6)  2
+```
+
+The mapping might be different for your device though.
+
+'''
+
 
 DIGIT = [
     (0, 1, 1, 1),
@@ -32,7 +77,16 @@ DIGIT = [
 
 SYMBOL = {
     " ": (0, 0, 0, 0, 0, 0, 0),
+    "0": (1, 1, 1, 0, 1, 1, 1),
     "1": (0, 0, 1, 0, 0, 1, 0),
+    "2": (1, 0, 1, 1, 1, 0, 1),
+    "3": (1, 0, 1, 1, 0, 1, 1),
+    "4": (0, 1, 1, 1, 0, 1, 0),
+    "5": (1, 1, 0, 1, 0, 1, 1),
+    "6": (1, 1, 0, 1, 1, 1, 1),
+    "7": (1, 0, 1, 0, 0, 1, 0),
+    "8": (1, 1, 1, 1, 1, 1, 1),
+    "9": (1, 1, 1, 1, 0, 1, 1),
     "a": (1, 1, 1, 1, 1, 1, 0),
     "b": (0, 1, 0, 1, 1, 1, 1),
     "c": (1, 1, 0, 0, 1, 0, 1),
@@ -55,8 +109,16 @@ SYMBOL = {
 }
 
 
-def render_digit(digit, symbol):
-    return DIGIT[digit] + SYMBOL[symbol]
+def _render_gpio_state(digit, symbol):
+    '''Return tuple with values for GPIOHandle pins.
+
+    digit is a number from 0 to 3
+    symbol is one character
+
+    If symbol is not present in SYMBOL dictionary - show nothing.
+
+    '''
+    return DIGIT[digit] + SYMBOL.get(symbol, SYMBOL[" "])
 
 
 class LCD7(GPIOHandle):
@@ -77,11 +139,25 @@ class LCD7(GPIOHandle):
         )
         self.state = None
 
+
     async def async_show(self, state=None):
+        '''Show current state on the display.
+
+        We loop through characters and render them on a corresponding
+        digits.
+
+        State should be a four character iterable (for example, string).
+        If state is given, reset the LCD display to it. If state is
+        not provided, check for the self.state class variable.
+
+        Looping is done asynchronously in a background. Loop will stop
+        as soon as the self.state class variable is set to None.
+
+        '''
         if state:
             self.state = state
 
         while self.state:
             for index, symbol in enumerate(self.state):
-                self.set_values(render_digit(index, symbol))
+                self.set_values(_render_gpio_state(index, symbol))
                 await asyncio.sleep(0.001)
