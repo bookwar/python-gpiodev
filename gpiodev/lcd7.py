@@ -49,7 +49,8 @@ If we enumerate physical pins on a device in a following manner:
      1  2  3  4  5  6
 ```
 
-Then to setup the LCD7 class one needs to specify the input pins in the following order:
+Then to setup the LCD7 class one needs to specify the input pins
+in the following order:
 
 ```
 Digits       Segments     Dots
@@ -104,7 +105,7 @@ SYMBOL = {
     "o": (1, 1, 1, 0, 1, 1, 1),
     "p": (1, 1, 1, 1, 1, 0, 0),
     "q": (1, 1, 1, 1, 0, 0, 1),
-    "r": (0, 0, 0, 0, 1, 1, 0),
+    "r": (0, 0, 0, 1, 1, 0, 0),
     "s": (1, 1, 0, 1, 0, 1, 1),
 }
 
@@ -126,6 +127,8 @@ class LCD7(GPIOHandle):
     def __init__(self, digits, segments):
         self.digits = digits
         self.segments = segments
+        self.window_size = len(digits)
+
         lines = self.digits + self.segments
         defaults = (
             (1,)*len(self.digits)
@@ -139,8 +142,7 @@ class LCD7(GPIOHandle):
         )
         self.state = None
 
-
-    async def async_show(self, state=None):
+    async def async_show_state(self, state=None, led_delay=0.005):
         '''Show current state on the display.
 
         We loop through characters and render them on a corresponding
@@ -160,4 +162,46 @@ class LCD7(GPIOHandle):
         while self.state:
             for index, symbol in enumerate(self.state):
                 self.set_values(_render_gpio_state(index, symbol))
-                await asyncio.sleep(0.001)
+                await asyncio.sleep(led_delay)
+
+    async def async_show_string(self, string=None, delay=0.5, led_delay=0.005):
+        '''Show the string on display.
+
+        Create a sliding window on the string and loop through the string
+        characters rendering the window on a display.
+
+        delay (in seconds) specifies the delay between window shifts.
+
+        led_delay (in seconds) is the maximum delay we can allow for a
+        segment to be off, without it being dimmed.
+
+        If string is given, reset the LCD display state to it. If it
+        is not provided, check for the self.state class variable.
+
+        Looping is done asynchronously in a background. Loop will stop
+        as soon as the self.state class variable is set to None.
+
+        Note that the change of the state will be noticed only at the end
+        of the sliding cycle: we show the full string first before switching
+        to a new one .
+
+        '''
+
+        string_ticks = int(delay / led_delay / self.window_size)
+
+        if string:
+            self.state = string
+
+        while self.state:
+            string = self.state
+            size = len(string)
+            for cursor in range(size):
+                print("!!%s" % string)
+                for counter in range(string_ticks):
+                    for index in range(self.window_size):
+                        symbol = string[(cursor + index) % size]
+                        self.set_values(_render_gpio_state(index, symbol))
+
+                        await asyncio.sleep(led_delay)
+
+        self.set_values(self.defaults)
