@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>WebSocket demo</title>
+		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/css/bootstrap.min.css" integrity="sha384-PsH8R72JQ3SOdhVi3uxftmaW6Vc51MKb0q5P2rRUpPvrszuE4W1povHYgTpBfshb" crossorigin="anonymous">
+		<script src="https://code.jquery.com/jquery-3.2.1.slim.min.js" integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.3/umd/popper.min.js" integrity="sha384-vFJXuSJphROIrBnz7yo7oB41mKfc8JzQZiCq4NCceLEaO4IHwicKwpJf9c9IpFgh" crossorigin="anonymous"></script>
+<script src="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.2/js/bootstrap.min.js" integrity="sha384-alpBpkh1PFOepccYVYDB4do5UnbKysX5WZXm3XxPqe5iKTfUKjNkCk9SaVuEZflJ" crossorigin="anonymous"></script>
+	<style>
+		button.btn {
+			margin: 5px;
+		}
+	</style>
+    </head>
+    <body>
+		<div id="btn_container" />
+        <script>
+			var num_lines = 0;
+			var ws = new WebSocket("ws://127.0.0.1:8080/ws");
+            ws.onmessage = function (event) {
+				var data = JSON.parse(event.data);
+				if (data.lines && num_lines != data.lines.length) {
+					// the amount of leds changed - recreate the UI!
+					$('button').remove();
+					num_lines = data.lines.length;
+					for (var i = 0; i < num_lines; i++) {
+						var btn = $('<button class="btn" id="button' + i + '" onclick="switchGPIO(' + data.lines[i] + ')">Switch GPIO ' + data.lines[i] + '</button>');
+						$('#btn_container').append(btn);
+					}
+				}
+				
+				// update Button colors - red (danger) for active GPIOs/LEDs, default switched off ones.
+				for (var i = 0; i < data.states.length; i++) {
+					if (data.states[i]) {
+						$('#button'+i).addClass('btn-danger');
+					} else {
+						$('#button'+i).removeClass('btn-danger');
+					}
+				}
+            };
+			
+			function switchGPIO(nr) {
+				// switch gpio value
+				var data = {switch_gpio: nr};
+				ws.send(JSON.stringify(data));
+			}
+        </script>
+    </body>
+</html>
