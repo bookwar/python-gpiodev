@@ -15,6 +15,11 @@ GPIOHANDLE_REQUEST_ACTIVE_LOW = 1 << 2
 GPIOHANDLE_REQUEST_OPEN_DRAIN = 1 << 3
 GPIOHANDLE_REQUEST_OPEN_SOURCE = 1 << 4
 
+
+GPIOEVENT_REQUEST_RISING_EDGE =	1 << 0
+GPIOEVENT_REQUEST_FALLING_EDGE = 1 << 1
+GPIOEVENT_REQUEST_BOTH_EDGES = (1 << 0 | 1 << 1)
+
 ########################################################
 # ctypes structures
 ########################################################
@@ -37,6 +42,9 @@ def get_library(name):
 
 
 libgpioctl = ctypes.CDLL(get_library("gpioctl"))
+
+libc = ctypes.CDLL(ctypes.util.find_library('c'))
+f_read = libc.read
 
 c32 = ctypes.c_char * 32
 
@@ -85,6 +93,12 @@ class _gpioevent_request (ctypes.Structure):
 class _gpiohandle_data (ctypes.Structure):
     _fields_ = [
         ('values', cu8_MAX),
+    ]
+
+class gpioevent_data (ctypes.Structure):
+    _fields_ = [
+	("timestamp", ctypes.c_ulonglong),
+        ('id', ctypes.c_ulong),
     ]
 
 ########################################################
@@ -209,3 +223,58 @@ class GPIOHandle:
             raise GPIOError("get_line_values call returned non-zero status")
 
         return _data.values[:self.num_lines]
+
+class GPIOEventHandle:
+
+    _FLAGS = {
+        "rising": GPIOEVENT_REQUEST_RISING_EDGE,
+	"falling": GPIOEVENT_REQUEST_FALLING_EDGE,
+        "both": GPIOEVENT_REQUEST_BOTH_EDGES,
+    }
+
+    def __init__(
+            self,
+            line,
+            mode,
+            label=b'',
+            GPIO=_GPIO,
+    ):
+        self.line = line
+
+        self.flags = self._FLAGS.get(mode, mode)
+        
+        if self.line > GPIOHANDLES_MAX:
+            raise GPIOError(
+                "Can not read line {0}. Line offset exceeds the limit ({1})"
+                .format(self.line, GPIOHANDLES_MAX)
+            )
+
+        self.label = label
+        self.gpio = GPIO
+
+        handle_flags = GPIOHANDLE_REQUEST_INPUT
+        
+        _request = _gpioevent_request(
+            lineoffset=self.line,
+            handleflags=handle_flags,
+            eventflags=self.flags,
+            consumer_label=self.label,
+        )
+
+        status = libgpioctl.get_lineevent(
+            self.gpio.fd,
+            ctypes.byref(_request),
+        )
+
+        if status != 0:
+            raise GPIOError("get_lineevent call returned non-zero status")
+
+        self.handle = _request.fd
+
+    def get(self):
+        _data = gpioevent_data()
+
+        status = f_read(self.handle, ctypes.byref(_data), ctypes.sizeof(_data))
+        if status != ctypes.sizeof(_data):
+            raise GPIOError("get_event_data error")
+        return ( float(_data.timestamp) / 1e9, _data.id)
