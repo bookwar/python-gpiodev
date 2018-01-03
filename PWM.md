@@ -40,7 +40,7 @@ Unpack srpm to `~/rpmbuild`:
 
 Prepare kernel source tree:
 
-    $ rpmbuild --nodeps -bp --with baseonle --target armv7l ~/rpmbuild/SPECS/kernel.spec
+    $ rpmbuild --nodeps -bp --with baseonly --target armv7l ~/rpmbuild/SPECS/kernel.spec
 
 Switch to the directory wuth unpacked kernel sources:
 
