@@ -1,5 +1,4 @@
 from gpiodev import GPIOEventHandle
-import time
 
 Button = GPIOEventHandle(17, mode="rising")
 
