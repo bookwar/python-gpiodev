@@ -3,7 +3,7 @@
 
 try:
     from setuptools import setup, find_packages
-except:
+except ImportError:
     from distutils.core import setup, find_packages
 
 from distutils.extension import Extension
