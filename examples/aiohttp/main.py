@@ -30,14 +30,14 @@ async def websocket_handler(request):
     resp = WebSocketResponse()
     ok, protocol = resp.can_prepare(request)
     if not ok:
-        with open(WS_FILE, 'rb') as fp:
-            return Response(body=fp.read(), content_type='text/html')
+        return Response(body='This is a WebSocket, not a WebSite',
+                        content_type='text/html')
     await resp.prepare(request)
     try:
         # new connection - send current GPIO configuration
         led_states = gpio_led.get_values()
         resp.send_str(json.dumps({
-            'states': led_states, 
+            'states': led_states,
             'lines': GPIO_LINES
         }))
         request.app['sockets'].append(resp)
@@ -47,13 +47,13 @@ async def websocket_handler(request):
             if msg.type == WSMsgType.TEXT:
                 led_states = gpio_led.get_values()
                 data = json.loads(msg.data)
-                
+
                 # switch selected GPIO by its pin number
                 if 'switch_gpio' in data:
                     led_nr = GPIO_LINES.index(data['switch_gpio'])
-                    led_states[led_nr] = int(not led_states[led_nr]) 
+                    led_states[led_nr] = int(not led_states[led_nr])
                     gpio_led.set_values(tuple(led_states))
-                
+
                 # update LED states to all connected clients
                 for ws in request.app['sockets']:
                     await ws.send_str(json.dumps({'states': led_states}))
@@ -85,7 +85,7 @@ def main():
     # aiohttp setup
     loop = asyncio.get_event_loop()
     app = loop.run_until_complete(init(loop))
-    
+
     run_app(app)
 
 
