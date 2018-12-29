@@ -232,6 +232,12 @@ class GPIOHandle:
 
         return _data.values[:self.num_lines]
 
+    def flip(self):
+        """Change all values to the opposite"""
+
+        current_values = self.get_values()
+        new_values = tuple([ 1 - value for value in current_values ])
+        self.set_values(new_values)
 
 class GPIOEventHandle:
 
