@@ -4,7 +4,18 @@
 
 For the set of GPIO lines (pins) we create an object called `GPIOHandle`, which manages their state.
 
-State is a tuple of 0's and 1's. 
+State is a tuple of 0's and 1's, with 1 meaning "on" and 0 - "off" state of the line.
+
+This library doesn't require root access to the system, but it needs a read-write access to the gpiochip device. By default it uses `/dev/gpiochip0`.
+
+To allow read-write access to the device for the user, run:
+
+    $ sudo chmod a+rw /dev/gpiochip0
+
+Note that the system might have several GPIO chips, some of them can be exposed to the user (as /dev/gpiochip0 on Raspberry Pi) and some of them might be responsible for system functions, like WakeOnLan or system LED lights. Be carefull when choosing the device and allowing user access to it.
+
+You can check the info on the GPIOChip device, by accessing its info() method. See example below.
+
 
 ## Example
 
@@ -12,7 +23,7 @@ State is a tuple of 0's and 1's.
 from gpiodev import GPIOHandle
 import time
 
-# Create handle for lines 12 and 23
+# Request handle for lines 12 and 23 from default /dev/gpiochip0 
 
 DoubleLED = GPIOHandle((12,23))
 
@@ -30,6 +41,26 @@ for state in [all, none, first, second, none, all, none]:
     print(DoubleLED.get_values())
     time.sleep(1)
 ```
+
+## Use another device
+
+To use another gpiochip device, for example `/dev/gpiochip1`, you can use a different way to setup a handle:
+
+```
+from gpiodev import GPIOChip
+
+GPIO = GPIOChip("/dev/gpiochip1")
+
+# Check info on the gpio chip
+
+print(GPIO.info())
+
+# Request handle for lines 12 and 23 from /dev/gpiochip1
+
+DoubleLED = GPIO.get_handle((12,23)) # This will fail on RaspberryPi as /dev/gpiochip1 is a system gpio chip, with only 8 lines.
+
+```
+
 
 ## Background
 
