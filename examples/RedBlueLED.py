@@ -1,7 +1,7 @@
 from gpiodev import GPIOHandle
 import time
 
-RedBlueLED = GPIOHandle((26, 21), mode="out")
+RedBlueLED = GPIOHandle((26, 21))
 
 print(RedBlueLED.get_values())
 

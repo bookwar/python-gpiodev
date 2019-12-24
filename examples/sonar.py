@@ -1,6 +1,7 @@
 from gpiodev import GPIOHandle, GPIOEventHandle
 import time
 
+
 class Sonar():
 
     def __init__(self, echo_pin, trigger_pin):
@@ -23,11 +24,9 @@ class Sonar():
 
         return (stop - start)*340.0/2.0
 
+
 S = Sonar(echo_pin=20, trigger_pin=21)
 
 while True:
     print(S.measure())
     time.sleep(5)
-
-
-
