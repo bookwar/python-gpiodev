@@ -112,6 +112,9 @@ class gpioevent_data (ctypes.Structure):
 ########################################################
 
 
+_GPIO = "/dev/gpiochip0"
+
+
 class GPIOError(IOError):
     pass
 
@@ -153,8 +156,22 @@ class _GPIOChip():
 
         return info
 
+    def get_handle(self, *args, **kwargs):
+        return GPIOHandle(*args, **kwargs, gpio=self)
 
-_GPIO = _GPIOChip("/dev/gpiochip0")
+    def get_event_handle(self, *args, **kwargs):
+        return GPIOEventHandle(*args, **kwargs, gpio=self)
+
+
+class GPIOChip():
+
+    _chips = {}
+
+    def __new__(cls, name=_GPIO):
+        if name not in cls._chips:
+            chip = _GPIOChip(name)
+            cls._chips[name] = chip
+        return cls._chips[name]
 
 
 class GPIOHandle:
@@ -167,10 +184,10 @@ class GPIOHandle:
     def __init__(
             self,
             lines,
-            mode,
+            mode="out",
             defaults=None,
-            label=b'',
-            GPIO=_GPIO,
+            label='',
+            gpio=None,
     ):
         self.num_lines = len(lines)
 
@@ -186,16 +203,19 @@ class GPIOHandle:
         if not defaults:
             defaults = (0,) * self.num_lines
 
-        self.defaults = defaults
-        self.lines = lines
+        self.defaults = tuple(defaults)
+        self.lines = tuple(lines)
         self.label = label
-        self.gpio = GPIO
+
+        if not gpio:
+            gpio = GPIOChip(_GPIO)
+        self.gpio = gpio
 
         _request = _gpiohandle_request(
             lineoffsets=self.lines,
             flags=self.flags,
             default_values=self.defaults,
-            consumer_label=self.label,
+            consumer_label=self.label.encode('utf-8'),
             lines=self.num_lines,
         )
 
@@ -210,6 +230,7 @@ class GPIOHandle:
         self.handle = _request.fd
 
     def set_values(self, values):
+        values = tuple(values)
         if len(values) != self.num_lines:
             raise GPIOError(
                 "Number of values {0} doesn't match number of lines {1}"
@@ -230,14 +251,15 @@ class GPIOHandle:
         if status != 0:
             raise GPIOError("get_line_values call returned non-zero status")
 
-        return _data.values[:self.num_lines]
+        return tuple(_data.values[:self.num_lines])
 
     def flip(self):
         """Change all values to the opposite"""
 
         current_values = self.get_values()
-        new_values = tuple([ 1 - value for value in current_values ])
+        new_values = tuple([1 - value for value in current_values])
         self.set_values(new_values)
+
 
 class GPIOEventHandle:
 
@@ -250,9 +272,9 @@ class GPIOEventHandle:
     def __init__(
             self,
             line,
-            mode,
-            label=b'',
-            GPIO=_GPIO,
+            mode="both",
+            label='',
+            gpio=None,
     ):
         self.line = line
 
@@ -265,7 +287,8 @@ class GPIOEventHandle:
             )
 
         self.label = label
-        self.gpio = GPIO
+        if not gpio:
+            self.gpio = GPIOChip(_GPIO)
 
         handle_flags = GPIOHANDLE_REQUEST_INPUT
 
@@ -273,7 +296,7 @@ class GPIOEventHandle:
             lineoffset=self.line,
             handleflags=handle_flags,
             eventflags=self.flags,
-            consumer_label=self.label,
+            consumer_label=self.label.encode('utf-8'),
         )
 
         status = libgpioctl.get_lineevent(
