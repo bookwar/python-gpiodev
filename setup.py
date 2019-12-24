@@ -17,6 +17,7 @@ setup(
     keywords='gpio, raspberry-pi',
     author='Aleksandra Fedorova',
     author_email='alpha@bookwar.info',
+    url="https://github.com/bookwar/python-gpiodev",
     license='Apache 2.0',
     packages=find_packages(),
     package_data={
