@@ -1,6 +1,7 @@
-from .gpio import GPIOHandle, GPIOEventHandle
+from .gpio import GPIOChip, GPIOHandle, GPIOEventHandle
 
 __all__ = [
+    "GPIOChip",
     "GPIOHandle",
     "GPIOEventHandle",
 ]
