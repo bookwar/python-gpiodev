@@ -1,5 +1,28 @@
 # GPIOHandle for character device
 
+## How to
+
+Blinking LED lights connected to pin 12 and 23:
+
+```
+from gpiodev import GPIOHandle
+import time
+
+DoubleLED = GPIOHandle((12,23,), mode="out")
+
+all = (1,1,)
+none = (0,0,)
+first = (1,0,)
+second = (0,1,)
+
+for state in [all, none, first, second, none, all, none]*10:
+    DoubleLED.set_values(state)
+    print(DoubleLED.get_values())
+    time.sleep(0.1)
+```
+
+## Background
+
 New GPIO interface has been
 [introduced](https://git.kernel.org/pub/scm/linux/kernel/git/torvalds/linux.git/commit/?id=1a46712aa99594eabe1e9aeedf115dfff0db1dfd)
 recently.
@@ -19,4 +42,4 @@ Check [examples](examples) for usage.
 
 ----
 
-Tested on Fedora 26 armv7, Raspberry Pi 3 Model B.
+Tested on [Fedora 26+ armhfp](https://arm.fedoraproject.org), Raspberry Pi 3 Model B.
