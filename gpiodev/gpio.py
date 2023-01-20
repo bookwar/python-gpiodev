@@ -287,8 +287,7 @@ class GPIOEventHandle:
             )
 
         self.label = label
-        if not gpio:
-            self.gpio = GPIOChip(_GPIO)
+        self.gpio = gpio or GPIOChip(_GPIO)
 
         handle_flags = GPIOHANDLE_REQUEST_INPUT
 
